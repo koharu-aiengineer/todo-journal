@@ -120,6 +120,16 @@ function Spinner() {
   );
 }
 
+function EditIcon({ size = 16 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7" />
+      <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z" />
+    </svg>
+  );
+}
+
 // ─── Client badge (共有) ────────────────────────────────────────────────────────
 
 function ClientBadge({ name, completed }: { name: string; completed: boolean }) {
@@ -166,6 +176,12 @@ export default function Home() {
   const [plannerError, setPlannerError] = useState<string | null>(null);
   const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
 
+  // ── Edit state ────────────────────────────────────────────────────────────────
+  const [editingId, setEditingId] = useState<number | null>(null);
+  const [editText, setEditText] = useState("");
+  const [editDueDate, setEditDueDate] = useState("");
+  const [editClient, setEditClient] = useState("");
+
   // ── Task handlers ─────────────────────────────────────────────────────────────
 
   const addTask = () => {
@@ -211,6 +227,27 @@ export default function Home() {
     setDeletedTask(null);
     if (toastTimer.current) clearTimeout(toastTimer.current);
   };
+
+  const startEdit = (task: Task) => {
+    setEditingId(task.id);
+    setEditText(task.text);
+    setEditDueDate(task.dueDate ?? "");
+    setEditClient(task.client ?? "");
+  };
+
+  const saveEdit = (id: number) => {
+    if (!editText.trim()) return;
+    setTasks((prev) =>
+      prev.map((t) =>
+        t.id === id
+          ? { ...t, text: editText.trim(), dueDate: editDueDate || null, client: editClient.trim() || null }
+          : t
+      )
+    );
+    setEditingId(null);
+  };
+
+  const cancelEdit = () => setEditingId(null);
 
   const prevMonth = () => {
     setCalendarDate((p) =>
@@ -324,24 +361,30 @@ export default function Home() {
   // ── タスクカード（リスト・パネル共通） ────────────────────────────────────────
 
   const renderTaskCard = (task: Task, compact = false) => {
+    const isEditing = task.id === editingId;
     const urgency = !task.completed && task.dueDate ? getUrgency(task.dueDate) : "normal";
     const us = URGENCY_STYLES[urgency];
     return (
       <li
         key={task.id}
-        className={`bg-[#162040] border flex items-center gap-4 transition-all duration-200 ${
+        className={`bg-[#162040] border flex gap-4 transition-all duration-200 ${
+          isEditing ? "items-start" : "items-center"
+        } ${
           compact
             ? "rounded-xl px-4 py-3 bg-[#0F1B3D]"
             : "rounded-t-2xl rounded-b-xl px-5 py-4"
         } ${
-          task.completed
+          isEditing
+            ? "border-[#D4A537]/50"
+            : task.completed
             ? "border-[#1A2850] opacity-45"
             : compact
             ? us.border
             : `${us.border} ${us.hoverBorder} hover:-translate-y-0.5 ${us.hoverShadow}`
         }`}
       >
-        <label className="relative flex-shrink-0 cursor-pointer">
+        {/* チェックボックス */}
+        <label className={`relative flex-shrink-0 cursor-pointer ${isEditing ? "mt-2" : ""}`}>
           <input type="checkbox" checked={task.completed}
             onChange={() => toggleTask(task.id)} className="peer sr-only" />
           <div className={`rounded-sm border border-[#D4A537] bg-transparent peer-checked:bg-[#D4A537] peer-checked:scale-105 transition-all duration-200 flex items-center justify-center ${
@@ -351,35 +394,107 @@ export default function Home() {
           </div>
         </label>
 
-        <div className="flex-1 min-w-0">
-          <span className={`text-sm leading-relaxed break-all ${
-            task.completed ? "line-through text-[#7B8FB3]" : "text-[#D6CEBE]"
-          }`}>
-            {task.text}
-          </span>
-          {(task.client || task.dueDate) && (
-            <div className="flex flex-wrap items-center gap-x-2 gap-y-1 mt-1">
-              {task.client && (
-                <ClientBadge name={task.client} completed={task.completed} />
-              )}
-              {task.dueDate && (
-                <p className={`flex items-center gap-1.5 text-[0.7rem] tracking-wide ${
-                  task.completed ? "text-[#3A4F7A]" : us.dateText
-                }`}>
-                  {!task.completed && urgency !== "normal" && (
-                    <span className={`inline-block w-1.5 h-1.5 rounded-full flex-shrink-0 ${us.dotBg}`} />
-                  )}
-                  {formatDueDate(task.dueDate)}
-                </p>
-              )}
+        {/* 通常表示 / 編集フォーム */}
+        {isEditing ? (
+          <div className="flex-1 flex flex-col gap-2 min-w-0">
+            <input
+              type="text"
+              value={editText}
+              onChange={(e) => setEditText(e.target.value)}
+              onKeyDown={(e) => e.stopPropagation()}
+              autoFocus
+              className="w-full bg-[#0F1B3D] border border-[#D4A537]/50 focus:border-[#D4A537] rounded-lg px-3 py-2 text-[#F5F0E6] text-sm outline-none transition-colors duration-200"
+            />
+            <div className="grid grid-cols-2 gap-2">
+              <div className="flex flex-col gap-1">
+                <label className="text-[#3A4F7A] text-[0.5rem] tracking-[0.3em] uppercase pl-1">期限日</label>
+                <input
+                  type="date"
+                  value={editDueDate}
+                  onChange={(e) => setEditDueDate(e.target.value)}
+                  className="w-full bg-[#0F1B3D] border border-[#243360] focus:border-[#D4A537]/70 rounded-lg px-2 py-1.5 text-[#F5F0E6] text-xs outline-none transition-colors duration-200 [color-scheme:dark] [&::-webkit-calendar-picker-indicator]:opacity-40 [&::-webkit-calendar-picker-indicator]:cursor-pointer [&::-webkit-calendar-picker-indicator]:invert"
+                />
+              </div>
+              <div className="flex flex-col gap-1">
+                <label className="text-[#3A4F7A] text-[0.5rem] tracking-[0.3em] uppercase pl-1">クライアント</label>
+                <input
+                  type="text"
+                  value={editClient}
+                  onChange={(e) => setEditClient(e.target.value)}
+                  onKeyDown={(e) => e.stopPropagation()}
+                  placeholder="クライアント名"
+                  className="w-full bg-[#0F1B3D] border border-[#243360] focus:border-[#D4A537]/70 rounded-lg px-2 py-1.5 text-[#F5F0E6] placeholder-[#3A4F7A] text-xs outline-none transition-colors duration-200"
+                />
+              </div>
             </div>
-          )}
-        </div>
+            <div className="flex justify-end gap-2 mt-0.5">
+              <button
+                type="button"
+                onClick={cancelEdit}
+                className="text-[#6B7FA3] hover:text-[#D6CEBE] text-xs tracking-[0.2em] uppercase transition-colors px-3 py-1.5"
+              >
+                キャンセル
+              </button>
+              <button
+                type="button"
+                onClick={() => saveEdit(task.id)}
+                disabled={!editText.trim()}
+                className="bg-[#D4A537] hover:bg-[#C49228] text-[#0F1B3D] font-semibold text-xs tracking-widest px-4 py-1.5 rounded-lg transition-all duration-200 disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                保存
+              </button>
+            </div>
+          </div>
+        ) : (
+          <div className="flex-1 min-w-0">
+            <span className={`text-sm leading-relaxed break-all ${
+              task.completed ? "line-through text-[#7B8FB3]" : "text-[#D6CEBE]"
+            }`}>
+              {task.text}
+            </span>
+            {(task.client || task.dueDate) && (
+              <div className="flex flex-wrap items-center gap-x-2 gap-y-1 mt-1">
+                {task.client && (
+                  <ClientBadge name={task.client} completed={task.completed} />
+                )}
+                {task.dueDate && (
+                  <p className={`flex items-center gap-1.5 text-[0.7rem] tracking-wide ${
+                    task.completed ? "text-[#3A4F7A]" : us.dateText
+                  }`}>
+                    {!task.completed && urgency !== "normal" && (
+                      <span className={`inline-block w-1.5 h-1.5 rounded-full flex-shrink-0 ${us.dotBg}`} />
+                    )}
+                    {formatDueDate(task.dueDate)}
+                  </p>
+                )}
+              </div>
+            )}
+          </div>
+        )}
 
-        <button type="button" onClick={() => deleteTask(task.id)} aria-label="タスクを削除"
-          className="flex-shrink-0 text-[#7A8FAF] hover:text-[#D4A537] transition-colors duration-200">
-          <DeleteIcon size={compact ? 15 : 17} />
-        </button>
+        {/* アクションボタン（表示モードのみ） */}
+        {!isEditing && (
+          <>
+            {!task.completed && (
+              <button
+                type="button"
+                onClick={() => startEdit(task)}
+                aria-label="タスクを編集"
+                className="flex-shrink-0 text-[#7A8FAF] hover:text-[#D4A537] transition-colors duration-200"
+              >
+                <EditIcon size={compact ? 14 : 16} />
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={() => deleteTask(task.id)}
+              aria-label="タスクを削除"
+              className="flex-shrink-0 text-[#7A8FAF] hover:text-[#D4A537] transition-colors duration-200"
+            >
+              <DeleteIcon size={compact ? 15 : 17} />
+            </button>
+          </>
+        )}
       </li>
     );
   };

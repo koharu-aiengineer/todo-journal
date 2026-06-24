@@ -212,10 +212,6 @@ export default function Home() {
     if (toastTimer.current) clearTimeout(toastTimer.current);
   };
 
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === "Enter") addTask();
-  };
-
   const prevMonth = () => {
     setCalendarDate((p) =>
       p.month === 0 ? { year: p.year - 1, month: 11 } : { ...p, month: p.month - 1 }
@@ -380,7 +376,7 @@ export default function Home() {
           )}
         </div>
 
-        <button onClick={() => deleteTask(task.id)} aria-label="タスクを削除"
+        <button type="button" onClick={() => deleteTask(task.id)} aria-label="タスクを削除"
           className="flex-shrink-0 text-[#7A8FAF] hover:text-[#D4A537] transition-colors duration-200">
           <DeleteIcon size={compact ? 15 : 17} />
         </button>
@@ -425,7 +421,6 @@ export default function Home() {
                 type="text"
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
-                onKeyDown={handleKeyDown}
                 placeholder="タスクを入力..."
                 className="w-full bg-[#0F1B3D] border border-[#243360] focus:border-[#D4A537]/70 rounded-xl px-4 py-3 text-[#F5F0E6] placeholder-[#3A4F7A] text-sm outline-none transition-colors duration-200"
               />
@@ -456,6 +451,7 @@ export default function Home() {
               </div>
               <div className="flex justify-end">
                 <button
+                  type="button"
                   onClick={addTask}
                   className="bg-[#D4A537] hover:bg-[#C49228] active:scale-95 text-[#0F1B3D] font-semibold px-8 py-3 rounded-xl text-sm tracking-widest transition-all duration-200 shadow-md"
                 >
@@ -479,6 +475,7 @@ export default function Home() {
                 <textarea
                   value={plannerDesc}
                   onChange={(e) => setPlannerDesc(e.target.value)}
+                  onKeyDown={(e) => e.stopPropagation()}
                   placeholder="例：ECサイトのLP制作（デザイン・コーディング・CMSへの組み込み）"
                   rows={3}
                   className="w-full bg-[#0F1B3D] border border-[#243360] focus:border-[#D4A537]/70 rounded-xl px-4 py-3 text-[#F5F0E6] placeholder-[#3A4F7A] text-sm outline-none transition-colors duration-200 resize-none"
@@ -513,6 +510,7 @@ export default function Home() {
               {/* 提案ボタン */}
               <div className="flex justify-end">
                 <button
+                  type="button"
                   onClick={generateMilestones}
                   disabled={plannerLoading || !plannerDesc.trim() || !plannerDeadline}
                   className="flex items-center gap-2 bg-[#D4A537] hover:bg-[#C49228] active:scale-95 text-[#0F1B3D] font-semibold px-8 py-3 rounded-xl text-sm tracking-widest transition-all duration-200 shadow-md disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-[#D4A537] disabled:active:scale-100"
@@ -568,6 +566,7 @@ export default function Home() {
                   </ul>
                   <div className="flex justify-end mt-3">
                     <button
+                      type="button"
                       onClick={addSelectedMilestones}
                       disabled={!suggestions.some((s) => s.checked)}
                       className="border border-[#D4A537]/60 hover:bg-[#D4A537]/10 active:scale-95 text-[#D4A537] font-semibold px-6 py-2.5 rounded-xl text-xs tracking-widest transition-all duration-200 disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:bg-transparent"
@@ -598,6 +597,7 @@ export default function Home() {
             {clients.length > 0 && (
               <div className="flex flex-wrap gap-2 mb-5">
                 <button
+                  type="button"
                   onClick={() => setFilterClient(null)}
                   className={`text-[0.58rem] tracking-[0.25em] uppercase px-3 py-1.5 rounded-full border transition-all duration-150 ${
                     filterClient === null
@@ -609,6 +609,7 @@ export default function Home() {
                 </button>
                 {clients.map((c) => (
                   <button
+                    type="button"
                     key={c}
                     onClick={() => setFilterClient(c)}
                     className={`text-[0.58rem] tracking-[0.25em] uppercase px-3 py-1.5 rounded-full border transition-all duration-150 ${
@@ -652,7 +653,7 @@ export default function Home() {
 
             <div className="bg-[#162040] border border-[#243360] rounded-t-2xl rounded-b-xl px-4 py-5 shadow-[0_4px_40px_rgba(0,0,0,0.4)]">
               <div className="flex items-center justify-between mb-4 px-1">
-                <button onClick={prevMonth} aria-label="前の月"
+                <button type="button" onClick={prevMonth} aria-label="前の月"
                   className="text-[#6B7FA3] hover:text-[#D4A537] transition-colors p-1.5 rounded-lg hover:bg-[#1E2E5A]">
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                     strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -662,7 +663,7 @@ export default function Home() {
                 <span className="font-[family-name:var(--font-playfair)] text-[#F5F0E6] tracking-[0.1em] text-sm">
                   {calendarDate.year}年 {MONTH_LABELS[calendarDate.month]}
                 </span>
-                <button onClick={nextMonth} aria-label="次の月"
+                <button type="button" onClick={nextMonth} aria-label="次の月"
                   className="text-[#6B7FA3] hover:text-[#D4A537] transition-colors p-1.5 rounded-lg hover:bg-[#1E2E5A]">
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                     strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -769,7 +770,7 @@ export default function Home() {
         <div className="fixed bottom-8 left-1/2 -translate-x-1/2 flex items-center gap-4 bg-[#162040] border border-[#D4A537]/30 text-[#F5F0E6] px-6 py-4 rounded-2xl shadow-[0_8px_48px_rgba(0,0,0,0.6)] whitespace-nowrap">
           <span className="text-[#6B7FA3] text-xs tracking-wider">タスクを削除しました</span>
           <div className="w-px h-3.5 bg-[#243360]" />
-          <button onClick={restoreTask}
+          <button type="button" onClick={restoreTask}
             className="text-xs font-semibold text-[#D4A537] hover:text-[#F5C842] tracking-[0.2em] uppercase transition-colors">
             元に戻す
           </button>
